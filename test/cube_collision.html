@@ -21,7 +21,7 @@
     </style>
 </head>
 <body>
-<div id="message" style="color:green; background-color: #888888"></div>
+<div id="message" style="color:green; font-size:200%"></div>
     <div id="ThreeJS" style="z-index: 2;"></div>
 
     <script>
@@ -74,7 +74,7 @@
 
 
             // 加入控制的cube
-            var cubeGeometry = new THREE.CubeGeometry(50, 50, 50, 5, 5, 5);
+            var cubeGeometry = new THREE.CubeGeometry(50, 50, 50, 10, 10, 10);
             var wireMaterial = new THREE.MeshBasicMaterial({
                 color: 0xfff000,
                 wireframe: true
@@ -164,14 +164,14 @@
             var material = new THREE.MeshBasicMaterial( {
                 color:  Math.random() * 0xffffff
             });
-            
+
             var object = new THREE.Mesh( geometry, material);
             var box = new THREE.BoxHelper( object );
             box.material.color.setHex(Math.random() * 0xffffff);
 
             box.position.x = getRandomArbitrary(-250, 250);
             box.position.y = 1 + b / 2;
-            box.position.z = getRandomArbitrary(0, -400);
+            box.position.z = getRandomArbitrary(200, -200);
             cubes.push(box);
             collideMeshList.push(box);
 
