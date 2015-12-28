@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Move a cube</title>
+    <script src="../js/three.min.js"></script>
+    <script src="../js/Detector.js"></script>
+    <script src="../js/OrbitControls.js"></script>
+    <script src="../js/THREEx.KeyboardState.js"></script>
+    <script src="../js/THREEx.FullScreen.js"></script>
+    <script src="../js/THREEx.WindowResize.js"></script>
+    <style>
+        body {
+            background-color: #111111;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            margin:0 auto;
+        }
+    </style>
+</head>
+<body>
+<div id="message" style="color:green; font-size:200%"></div>
+    <div id="ThreeJS" style="z-index: 2;"></div>
+
+    <script>
+        // 定义全局变量
+        var container, scene, camera, renderer, controls;
+        var keyboard = new THREEx.KeyboardState();
+        var clock = new THREE.Clock;
+
+        var movingCube;
+        var collideMeshList = [];
+        var cubes = [];
+        var message = document.getElementById("message");
+        var crash = false;
+
+        init();
+        animate();
+
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            // Camera
+            var screenWidth = window.innerWidth;
+            var screenHeight = window.innerHeight;
+            camera = new THREE.PerspectiveCamera(45, screenWidth/screenHeight, 200, 5000);
+            camera.position.set(0, 150, 400);
+
+            // Renderer
+            if(Detector.webgl) {
+                renderer = new THREE.WebGLRenderer({antialias:true});
+            } else {
+                renderer = new THREE.CanvasRenderer();
+            }
+            renderer.setSize(screenWidth, screenHeight);
+            container = document.getElementById("ThreeJS");
+            container.appendChild(renderer.domElement);
+
+            THREEx.WindowResize(renderer, camera);
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+            // 加入一个平面
+            var floorMaterial = new THREE.MeshBasicMaterial({
+                color: 0x222222,
+                side: THREE.DoubleSide
+            });
+            var floorGeometry = new THREE.PlaneGeometry(600, 10000, 10, 10);
+            var floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.position.y = -0.5;
+            floor.rotation.x = Math.PI / 2;
+            scene.add(floor);
+
+
+            // 加入控制的cube
+            var cubeGeometry = new THREE.CubeGeometry(50, 50, 50, 10, 10, 10);
+            var wireMaterial = new THREE.MeshBasicMaterial({
+                color: 0xfff000,
+                wireframe: true
+            });
+            movingCube = new THREE.Mesh(cubeGeometry, wireMaterial);
+            movingCube.position.set(0, 25, 0);
+            scene.add(movingCube);
+
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+            update();
+        }
+
+        function update() {
+            var delta = clock.getDelta();
+            var moveDistance = 200 * delta;
+            var rotateAngle = Math.PI / 2 * delta;
+
+            if (keyboard.pressed("A")) {
+                movingCube.rotation.y += rotateAngle;
+            }
+            if (keyboard.pressed("D")) {
+                movingCube.rotation.y += rotateAngle;
+            }
+
+            if (keyboard.pressed("left")) {
+                movingCube.position.x -= moveDistance;
+            }
+            if (keyboard.pressed("right")) {
+                movingCube.position.x += moveDistance;
+            }
+            if (keyboard.pressed("up")) {
+                movingCube.position.z -= moveDistance;
+            }
+            if (keyboard.pressed("down")) {
+                movingCube.position.z += moveDistance;
+            }
+
+            var originPoint = movingCube.position.clone();
+
+            for (var vertexIndex = 0; vertexIndex < movingCube.geometry.vertices.length; vertexIndex++) {
+                // 顶点原始坐标
+                var localVertex = movingCube.geometry.vertices[vertexIndex].clone();
+                // 顶点经过变换后的坐标
+                var globalVertex = localVertex.applyMatrix4(movingCube.matrix);
+                var directionVector = globalVertex.sub(movingCube.position);
+
+                var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
+                var collisionResults = ray.intersectObjects(collideMeshList);
+                if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
+                    crash = true;
+                    break;
+                }
+                crash = false;
+            }
+
+            if (crash) {
+                message.innerText = "crash";
+                console.log("Crash");
+            } else {
+                message.innerText = "Safe";
+            }
+            if (cubes.length< 4 && Math.random() < 0.01) {
+                makeRandomCube();
+            }
+            controls.update();
+        }
+
+        // 返回一个介于min和max之间的随机数
+        function getRandomArbitrary(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        // 返回一个介于min和max之间的整型随机数
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1) + min);
+        }
+
+        function makeRandomCube() {
+            var a = getRandomInt(1, 2) * 50,
+                    b = getRandomInt(1, 3) * 50,
+                    c = getRandomInt(1, 2) * 50;
+            var geometry = new THREE.CubeGeometry(a, b, c);
+            var material = new THREE.MeshBasicMaterial( {
+                color:  Math.random() * 0xffffff
+            });
+
+            var object = new THREE.Mesh( geometry, material);
+            var box = new THREE.BoxHelper( object );
+            box.material.color.setHex(Math.random() * 0xffffff);
+
+            box.position.x = getRandomArbitrary(-250, 250);
+            box.position.y = 1 + b / 2;
+            box.position.z = getRandomArbitrary(200, -200);
+            cubes.push(box);
+            collideMeshList.push(box);
+
+            scene.add( box );
+        }
+
+    </script>
+</body>
+</html>
